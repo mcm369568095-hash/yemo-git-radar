@@ -42,12 +42,27 @@ LANG_SCORE = {
 # ---------------------------------------------------------------- 工具
 
 def _parse_dt(s):
+    """认 GitHub 的 ISO 时间。Z 结尾、+00:00 结尾、带微秒、只有日期，都要能吃。
+
+    只认一种格式是个隐患：轻量通路是从网页/静态文件里抠字段的，
+    格式和 API 不完全一样，认不出来就静默返回 9999 天，
+    后面所有日期判断（时效红利、一年多没提交、星速）全部失效。
+    """
     if not s:
         return None
+    s = str(s).strip().replace("Z", "+00:00")
     try:
-        return datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        d = datetime.fromisoformat(s)
     except Exception:
-        return None
+        for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                d = datetime.strptime(s.split("+")[0].split(".")[0], fmt)
+                break
+            except Exception:
+                d = None
+        if d is None:
+            return None
+    return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
 
 
 def days_since(s):
@@ -83,7 +98,10 @@ def reject_reason(r):
         return "项目已归档"
     if r.get("stars", 0) < 50:
         return "星数太少，需求没被验证"
-    if days_since(r.get("pushed_at")) > 365:
+    # 拿不到提交时间（轻量通路）时不要当"年久失修"——缺数据不等于项目死了。
+    # 能上 trending 本身就说明刚有人在动它。
+    pushed = r.get("pushed_at")
+    if pushed and days_since(pushed) > 365:
         return "一年多没提交，代码可能已经跑不动"
 
     name = (r.get("name") or "").lower()
@@ -140,13 +158,20 @@ def score(r, readme=""):
 
     # 4 需求真实 20 —— 用 issue/star 比当"有人在真用"的代理指标
     stars = max(1, r.get("stars", 1))
-    ratio = r.get("open_issues", 0) / stars
-    if ratio >= 0.02:
-        s4 = 20
-    elif ratio >= 0.005:
-        s4 = 16
+    oi = r.get("open_issues")
+    if oi is None:
+        # 轻量通路拿不到 issue 数。缺数据不等于没人用：
+        # 一天涨几十上百星，本身就是"一堆人在关注"的证据。
+        g = r.get("gained") or 0
+        s4 = 15 if g >= 100 else 13 if g >= 30 else 10
     else:
-        s4 = 10
+        ratio = oi / stars
+        if ratio >= 0.02:
+            s4 = 20
+        elif ratio >= 0.005:
+            s4 = 16
+        else:
+            s4 = 10
     if r.get("has_discussions"):
         s4 += 2
     if days_since(r.get("pushed_at")) <= 7:
@@ -167,17 +192,23 @@ def score(r, readme=""):
     detail["deliver"] = s5
 
     # 6 时效红利 10 —— 越新越少人做，越容易吃到第一波
-    age = days_since(r.get("created_at"))
-    if age <= 30:
-        s6 = 10
-    elif age <= 60:
-        s6 = 7
-    elif age <= 90:
-        s6 = 5
-    elif age <= 180:
-        s6 = 3
+    created = r.get("created_at")
+    if created:
+        age = days_since(created)
+        if age <= 30:
+            s6 = 10
+        elif age <= 60:
+            s6 = 7
+        elif age <= 90:
+            s6 = 5
+        elif age <= 180:
+            s6 = 3
+        else:
+            s6 = 1
     else:
-        s6 = 1
+        # 轻量通路拿不到创建时间，用"今天涨了多少星"当新鲜度的替身
+        g = r.get("gained") or 0
+        s6 = 7 if g >= 100 else 5 if g >= 30 else 3 if g >= 10 else 2
     detail["fresh"] = s6
 
     total = sum(detail.values())
@@ -206,6 +237,11 @@ def score(r, readme=""):
     except Exception:
         pass
     detail["adj"] = adj
+
+    # 轻量通路有三项是估的，整体再折 6%。
+    # 不折的话会出现"字段缺得越多分越高"——替代证据比真实数据还宽松，那就本末倒置了。
+    if r.get("_partial"):
+        total = int(total * 0.94)
 
     total = max(0, min(100, total + adj))
     return total, detail
@@ -286,4 +322,29 @@ def velocity(r, span_days=None):
         return g / max(1, span_days)
     age = max(1, days_since(r.get("created_at")))
     return (r.get("stars") or 0) / age if age < 400 else 0
+
+
+# ---------------------------------------------------------------- 星速可疑
+
+# 一个仓库短期内暴涨到离谱的量级，通常三种情况：真被大 V 转了一次、
+# 刷星买榜、或者数据本身就是营销出来的。三种情况下都不该让人今晚就动手——
+# 刷出来的热度没有真实用户，你做出的二创也没人接。
+SUSPECT_PER_DAY = 700      # 平均每天涨 700 星以上，值得看一眼
+SUSPECT_WINDOW = 180       # 只看建号 180 天内的；老仓库总量大很正常
+
+
+def star_suspect(r):
+    """返回一句警示，没问题返回空串。"""
+    created = r.get("created_at")
+    if not created:
+        return ""
+    age = days_since(created)
+    if age >= SUSPECT_WINDOW:
+        return ""
+    stars = r.get("stars") or 0
+    per_day = stars / max(1, age)
+    if per_day < SUSPECT_PER_DAY:
+        return ""
+    return (f"星速可疑：{age} 天涨到 {stars:,} 星（日均 {int(per_day):,}），"
+            f"先观察一周看有没有真实用户再动手")
 

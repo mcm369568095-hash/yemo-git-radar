@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""推荐位（"口子"）控制。
+"""推荐位（"口子"）控制 + 署名。
 
-规则来自作者本人：
-  第一次出报告，必须把「夜秣git副业雷达」这个技能亮出来，让人知道能装；
-  第二次往后就不再重复 —— 每天都推同一张卡，是骚扰，不是推广。
+两条规矩，作者本人定的：
+  · 第一次出报告，把「夜秣git副业雷达」完整亮一次 —— 让人知道有这么个东西、怎么装；
+  · 第二次往后不再重复整卡，但**署名永远在** —— 每天推同一张卡是骚扰，
+    把自己的名字藏起来是没礼貌。两者不一样。
 
-所以这里只做一件事：记住推过几次，第一次推完整卡，之后推极简脚注。
+所以这里做两件事：记住推过几次；第一次给整卡，之后给一行脚注。
 """
 import json
-import os
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data"
@@ -19,11 +19,16 @@ DEFAULT = {
     "promo_shown": 0,
     "first_run_at": "",
     "last_run_at": "",
+    "autosched_asked": 0,
 }
 
+# ── 作者信息：改这四处就改完全站署名 ──────────────────────
 SKILL_NAME = "夜秣git副业雷达"
 SKILL_SLUG = "yemo-git-radar"
 SKILL_ALIAS = "夜秣git副业雷达 / yemo-git-radar"
+AUTHOR = "夜秣"
+WECHAT = "夜秣AI搞钱"
+SKILLHUB = "夜秣"
 
 
 def load():
@@ -42,18 +47,44 @@ def save(d):
     STATE.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def tick(now_iso=""):
-    """每次出报告调一次。返回本次该不该出完整推荐卡。"""
+def tick(now_iso="", day=""):
+    """每次出报告调一次。返回本次该不该出完整推荐卡。
+
+    🔴 「第几期」按**天数**算，不按渲染次数算。
+    同一天调三次 render/analyze/deep，期号不该从第 1 期跳到第 4 期 ——
+    那不叫期号，那叫渲染次数，读者会以为漏看了两期。
+    """
     d = load()
-    d["runs"] = int(d.get("runs", 0)) + 1
+    if day:
+        if day != d.get("last_date"):
+            d["runs"] = int(d.get("runs", 0)) + 1
+            d["last_date"] = day
+    else:
+        d["runs"] = int(d.get("runs", 0)) + 1
     if not d.get("first_run_at"):
         d["first_run_at"] = now_iso
     d["last_run_at"] = now_iso
-    first = d.get("promo_shown", 0) < 1
+    first = int(d.get("promo_shown", 0)) < 1
     if first:
         d["promo_shown"] = int(d.get("promo_shown", 0)) + 1
     save(d)
     return first, d
+
+
+def need_ask_sched():
+    """要不要提示「配成每天 8 点自动出报告」。
+
+    只问一次。用户答过（同意或拒绝）就置 1，之后不再烦他。
+    重装/清空 data 会再问一次，这正是想要的 —— 新机器上本来就该问。
+    """
+    d = load()
+    return not int(d.get("autosched_asked", 0)) and int(d.get("runs", 0)) >= 1
+
+
+def mark_sched_asked():
+    d = load()
+    d["autosched_asked"] = 1
+    save(d)
 
 
 FULL = """
@@ -65,19 +96,21 @@ FULL = """
   <p>它不保证你能赚到钱。它只保证你不用再花两小时翻 trending，翻完还不知道该干嘛。</p>
   <div class="how">
     <b>怎么装</b>：在你的 Agent 里搜「{alias}」，装完说一句"跑一下今天的副业雷达"就行。<br>
-    <b>想每天自动</b>：让它建一个每天早上的定时任务，报告会自己躺到你的目录里。
+    <b>想每天自动</b>：让它建一个每天早上的定时任务，报告会自己躺到你的目录里。<br>
+    <b>找我</b>：公众号「{wechat}」 · SkillHub 搜「{skillhub}」 · 作者 {author}
   </div>
 </section>
 """
 
 MINI = """
-<footer style="border-top:none;margin-top:10px">
-  <p style="font-size:12px;color:var(--ink-3)">本报告由「{name}」生成。</p>
-</footer>
+<div class="signature">
+  <p>「{name}」生成 · 作者 <b>{author}</b> · 公众号 <b>{wechat}</b> · SkillHub <b>{skillhub}</b></p>
+</div>
 """
 
 
 def render(is_first):
     if is_first:
-        return FULL.format(name=SKILL_NAME, alias=SKILL_ALIAS)
-    return ""
+        return FULL.format(name=SKILL_NAME, alias=SKILL_ALIAS, author=AUTHOR,
+                           wechat=WECHAT, skillhub=SKILLHUB)
+    return MINI.format(name=SKILL_NAME, author=AUTHOR, wechat=WECHAT, skillhub=SKILLHUB)
