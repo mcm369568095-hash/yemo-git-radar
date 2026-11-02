@@ -1,7 +1,12 @@
 ---
 name: yemo-git-radar
+slug: yemo-git-radar
 display_name: 夜秣git副业雷达
+displayName: 夜秣git副业雷达
 display_name_en: Yemo Git Side-Hustle Radar
+version: 2.0.0
+description_zh: "GitHub 副业雷达：每天扫一遍涨星最快的开源项目，按「能不能变成钱」打分，每个项目写清四层（英文原文 / 中文直译 / 说人话 / 能干什么怎么用）+ 差哪一步能卖 + 卖给谁 + 自用省什么 + 怎么打包出售。两个 tab：每日重点全站扫，单独重点盯你选的赛道（今日新上榜 / 涨星中 / 既往高星）。跨天查重、每天建档，越用越像自己的选品库。三套配色、翻译流水线、点名深挖、档案检索。作者 夜秣。"
+description_en: "GitHub side-hustle radar: scans the fastest-growing open-source repos daily and ranks them by monetizability instead of stars. Each project gets a four-layer Chinese explanation plus what is missing before it can be sold, who would buy it and why, what you save by using it yourself, and how to package it as a product. Two tabs: daily picks across all categories and focus picks for your chosen niche (new today / gaining stars / proven veterans). Cross-day dedupe and a daily archive build your own product-picking library. Three CSS themes, translation pipeline, single-repo deep dive and archive search. Author: Yemo."
 description: "GitHub 副业雷达：每天扫一遍涨星最快的开源项目，按「能不能变成钱」打分，逐条写清——这是干什么的（英文原文 / 中文直译 / 说人话 / 能干什么·怎么用）、差哪一步能卖、卖给谁为什么买、自用能省什么、怎么打包出售。两个 tab：每日重点（全站扫 8 个）/ 单独重点（你选的赛道，分今日新上榜·涨星中·既往高星）。跨天查重、每天自动建档，越用越像自己的选品库。触发场景：GitHub 涨星榜、trending 分析、找副业项目、可二创开源项目、独立开发选品、开源项目变现、接单机会、每日情报日报、star 增长分析、side hustle、indie hacker、给客户做部署交付、夜秣副业雷达。带翻译流水线（翻译覆盖率可到 100%）与白天 / 摸鱼绿 / 深夜三套配色；支持点名深挖（deep owner/repo）与历史档案检索（archive --grep）。作者 夜秣 · 公众号「夜秣AI搞钱」 · SkillHub 搜「夜秣」。"
 author: 夜秣
 homepage: https://github.com/mcm369568095-hash
