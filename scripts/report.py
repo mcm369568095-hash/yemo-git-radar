@@ -21,6 +21,25 @@ def fmt(n):
         return str(n)
 
 
+def jump_html(r, dark=False):
+    """显式的「打开项目」按钮。
+
+    🔴 为什么要这个：标题本来就是链接，但**看得懂的人不用说，看不懂的人不会猜**。
+    实测反馈（用户拿给家里人用）："没找到跳转"。深色卡上的标题更是连下划线都没有，
+    看着就像一段加粗文字。
+
+    所以别再指望"点标题就行"——把入口做成一枚看得见、带箭头的按钮，宁可丑一点。
+    """
+    url = (r.get("url") or "").strip()
+    if not url:
+        return ""
+    cls = "jump jump-dark" if dark else "jump"
+    ttl = f'在 GitHub 打开 {r.get("full_name", "")}'
+    return (f'<a class="{cls}" href="{esc(url)}" target="_blank" '
+            f'rel="noopener" title="{esc(ttl)}">'
+            f'打开项目<span class="arw">↗</span></a>')
+
+
 def card(i, r):
     g = r.get("grade", "C")
     a = r.get("analy") or {}
@@ -71,7 +90,10 @@ def card(i, r):
       <div class="by">作者 <a href="https://github.com/{esc(r.get('owner'))}" target="_blank" rel="noopener">@{esc(r.get('owner'))}</a>
         · 综合 {r.get('score',0)}/100</div>
     </div>
-    <span class="badge {g}">{g} · {esc(r.get('grade_word',''))}</span>
+    <div class="side">
+      <span class="badge {g}">{g} · {esc(r.get('grade_word',''))}</span>
+      {jump_html(r)}
+    </div>
   </div>
   <div class="nums">{''.join(nums)}</div>
 {layers_html(r, a)}
@@ -350,9 +372,13 @@ def build_focus_panel(focus_tab, deep=None, kb=None):
 def build_extra(dropped, no=2):
     if not dropped:
         return ""
+    # 名字也做成链接 —— 「排掉的」不等于「看不见的」，有人就是想点进去自己判断
     rows = "".join(
-        f'<div style="display:flex;gap:14px;padding:8px 0;border-top:1px solid #F0ECE2">'
-        f'<span style="flex:0 0 178px;font-size:13.5px;color:var(--ink);word-break:break-all;line-height:1.6">{esc(d["full_name"])}</span>'
+        f'<div style="display:flex;gap:14px;padding:8px 0;border-top:1px solid var(--line)">'
+        f'<a href="https://github.com/{esc(d["full_name"])}" target="_blank" rel="noopener" '
+        f'style="flex:0 0 178px;font-size:13.5px;color:var(--ink);word-break:break-all;'
+        f'line-height:1.6;text-decoration:none;border-bottom:1px dashed var(--line)">'
+        f'{esc(d["full_name"])}</a>'
         f'<span style="flex:1;font-size:13px;color:var(--ink-3);line-height:1.6">{esc(d["reason"])}</span>'
         f'</div>'
         for d in dropped[:12]
@@ -394,7 +420,10 @@ def deep_card(r, i=None):
     say = a.get("plain") or "（还没有说明）"
     hero = f"""
 <section class="deep-hero">
-  <p class="k">单独重点 · 深挖</p>
+  <div class="deep-top">
+    <p class="k">单独重点 · 深挖</p>
+    {jump_html(r, dark=True)}
+  </div>
   <h2><a href="{esc(r.get('url'))}" target="_blank" rel="noopener" style="color:#fff">{esc(name)}</a></h2>
   <p class="sub">作者 @{esc(r.get('owner'))} · {esc(r.get('grade_word',''))}</p>
   <p class="say">{esc(say)}</p>

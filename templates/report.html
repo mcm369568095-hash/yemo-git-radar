@@ -169,6 +169,19 @@
   .badge.B{background:var(--gray-l);color:var(--ink-2);border:1px solid var(--line)}
   .badge.C{background:var(--soft);color:var(--ink-3);border:1px solid var(--line)}
 
+  /* 右上角：等级 + 跳转按钮，竖着摞 */
+  .side{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .jump{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;
+        color:var(--ink);background:var(--soft);border:1.2px solid var(--ink-2);border-radius:8px;
+        padding:6px 12px;white-space:nowrap;text-decoration:none;transition:.14s ease}
+  .jump .arw{font-size:13.5px;line-height:1;color:var(--gold-d)}
+  .jump:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .jump:hover .arw{color:var(--paper)}
+  .jump-dark{background:transparent;color:var(--band-kicker);border-color:var(--band-kicker)}
+  .jump-dark .arw{color:var(--band-kicker)}
+  .jump-dark:hover{background:var(--band-kicker);color:var(--band);border-color:var(--band-kicker)}
+  .jump-dark:hover .arw{color:var(--band)}
+
   .nums{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
   .num{font-size:12.5px;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:4px 9px;color:var(--ink-2)}
   .num b{color:var(--ink);font-weight:700}
@@ -222,7 +235,9 @@
   .deep-hero{background:linear-gradient(150deg,var(--band),var(--band-2));color:var(--band-ink);
              border-radius:16px;padding:26px 24px;margin:26px 0 6px;
              border:1px solid var(--line)}
-  .deep-hero .k{font-size:11.5px;letter-spacing:.2em;color:var(--band-kicker);font-weight:700;margin:0 0 10px}
+  .deep-hero .k{font-size:11.5px;letter-spacing:.2em;color:var(--band-kicker);font-weight:700;margin:0}
+  .deep-top{display:flex;align-items:center;justify-content:space-between;gap:12px;
+            flex-wrap:wrap;margin:0 0 10px}
   .deep-hero h2{margin:0 0 6px;font-size:26px;font-weight:800;line-height:1.32;word-break:break-all;color:var(--band-ink)}
   .deep-hero .sub{font-size:13.5px;color:var(--band-ink-2);margin:0 0 14px}
   .deep-hero .say{font-size:16.5px;line-height:1.85;color:var(--band-ink);margin:0}
@@ -269,6 +284,13 @@
     .tabs label{font-size:15px;padding:11px 4px 12px}
     .ly .tx{font-size:14px}
     .ly.plain .tx{font-size:15.2px}
+    /* 窄屏：右侧那一列（等级 + 跳转）整块换到标题下面一行。
+       留在右边会把项目名挤成「Leonxln / x/taste-s / kill」那种竖条。 */
+    .card-top{flex-wrap:wrap}
+    .side{order:3;flex-direction:row;align-items:center;width:100%;
+          justify-content:flex-start;margin-top:10px}
+    .jump{font-size:12.5px;padding:5px 10px}
+    .name{font-size:17px}
   }
 </style>
 </head>
